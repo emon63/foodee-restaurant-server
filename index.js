@@ -9,7 +9,7 @@ app.use(cors());
 app.use(express.json());
 
 
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, Admin } = require('mongodb');
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@cluster0.7spqbed.mongodb.net/?retryWrites=true&w=majority`;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
@@ -28,6 +28,7 @@ async function run() {
 
         const menuCollection = client.db("foodeeDB").collection("menu");
         const reviewsCollection = client.db("foodeeDB").collection("reviews");
+        const cartCollection = client.db("foodeeDB").collection("carts");
 
         app.get('/menu', async (req, res) => {
             const result = await menuCollection.find().toArray();
@@ -36,6 +37,23 @@ async function run() {
 
         app.get('/reviews', async (req, res) => {
             const result = await reviewsCollection.find().toArray();
+            res.send(result);
+        })
+
+        app.get('/carts', async (req, res) => {
+            const email = req.query.email;
+            if (!email) {
+                res.send([])
+            }
+            const query = { email: email };
+            const result = await cartCollection.find(query).toArray();
+            res.send(result)
+        })
+
+        app.post('/carts', async (req, res) => {
+            const item = req.body;
+            console.log(item);
+            const result = await cartCollection.insertOne(item);
             res.send(result);
         })
 
@@ -58,3 +76,19 @@ app.get('/', (req, res) => {
 app.listen(port, () => {
     console.log(`foodee restaurent is running on port : ${port}`)
 })
+
+
+/* 
+-------------------
+Naming Convention
+-------------------
+* users : userCollection
+* app.get('/users')
+* app.get('/users/:id)
+* app.post('/users')
+* app.patch('/users/:id')
+* app.put('/users/:id')
+* app.delete('/users/:id')
+*
+--------------------
+*/
