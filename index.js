@@ -2,6 +2,8 @@ const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
 const app = express();
+const jwt = require('jsonwebtoken');
+
 const port = process.env.PORT || 5000;
 
 // middleware
@@ -31,6 +33,12 @@ async function run() {
         const reviewsCollection = client.db("foodeeDB").collection("reviews");
         const cartCollection = client.db("foodeeDB").collection("carts");
 
+        app.post('/jwt', (req, res) => {
+            const user = req.body;
+            const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' });
+            res.send({ token })
+        })
+
         app.get('/users', async (req, res) => {
             const result = await usersCollection.find().toArray();
             res.send(result);
@@ -45,6 +53,17 @@ async function run() {
             }
             const result = await usersCollection.insertOne(user);
             res.send(result);
+        })
+        app.patch('/users/admin/:id', async (req, res) => {
+            const id = req.params.id;
+            const filter = { _id: new ObjectId(id) };
+            const updateDoc = {
+                $set: {
+                    role: 'admin'
+                },
+            }
+            const result = await usersCollection.updateOne(filter, updateDoc);
+            res.send(result)
         })
         app.get('/menu', async (req, res) => {
             const result = await menuCollection.find().toArray();
