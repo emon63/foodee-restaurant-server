@@ -6,6 +6,8 @@ const jwt = require('jsonwebtoken');
 
 const port = process.env.PORT || 5000;
 
+const stripe = require('stripe')(process.env.PAYMENT_SECRET_KEY);
+
 // middleware
 app.use(cors());
 app.use(express.json());
@@ -54,6 +56,7 @@ async function run() {
         const menuCollection = client.db("foodeeDB").collection("menu");
         const reviewsCollection = client.db("foodeeDB").collection("reviews");
         const cartCollection = client.db("foodeeDB").collection("carts");
+        const paymentCollection = client.db("foodeeDB").collection("payments");
 
         app.post('/jwt', (req, res) => {
             const user = req.body;
@@ -167,7 +170,25 @@ async function run() {
             res.send(result);
         })
 
+        app.post('/create-payment-intent', verifyJWT, async (req, res) => {
+            const { price } = req.body;
+            const amount = price * 100;
+            const paymentIntent = await stripe.paymentIntents.create({
+                amount: amount,
+                currency: 'usd',
+                payment_method_types: ["card"],
 
+            });
+            res.send({
+                clientSecret: paymentIntent.client_secret
+            })
+        })
+
+        app.post('/payments', verifyJWT, async (req, res) => {
+            const payment = req.body;
+            const result = await paymentCollection.insertOne(payment);
+            res.send(result)
+        })
         // Send a ping to confirm a successful connection
         await client.db("admin").command({ ping: 1 });
         console.log("Pinged your deployment. You successfully connected to MongoDB!");
